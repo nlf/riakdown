@@ -42,27 +42,48 @@ RiakDOWN.prototype._put = function (key, value, options, callback) {
         key: toKey(key),
         content: {
             value: value,
-            content_type: 'application/octet-stream'
-        }
+            content_type: options.content_type || 'application/octet-stream'
+        },
+        vclock: options.vclock
     }, callback);
 };
 
 RiakDOWN.prototype._get = function (key, options, callback) {
+    var self = this;
     var bucket = options.bucket || this._bucket;
+    var newoptions;
 
     this._client.get({ bucket: bucket, key: toKey(key) }, function (err, reply) {
         if (err || (!reply || !reply.content || !reply.content.length)) {
             return callback(new Error('NotFound'));
         }
 
-        callback(null, options.asBuffer === false ? reply.content[0].value.toString() : reply.content[0].value);
+        if (reply.content.length === 1) {
+            return callback(null, options.asBuffer === false ? reply.content[0].value.toString() : reply.content[0].value);
+        }
+
+        newoptions = JSON.parse(JSON.stringify(options)); // ugly clone so we don't modify the original options
+        newoptions.bucket = bucket;
+        RiakDOWN._siblingResolver(key, reply.content, newoptions, function (err, resolved) {
+            if (err) {
+                return callback(err);
+            }
+
+            if (typeof resolved !== 'string' && !Buffer.isBuffer(resolved)) {
+                resolved = JSON.stringify(resolved);
+            }
+
+            self._put(key, resolved, { bucket: bucket, vclock: reply.vclock }, function (err) {
+                self._get(key, options, callback);
+            });
+        });
     });
 };
 
 RiakDOWN.prototype._del = function (key, options, callback) {
     var bucket = options.bucket || this._bucket;
 
-    this._client.del({ bucket: bucket, key: toKey(key) }, callback);
+    this._client.del({ bucket: bucket, key: toKey(key), vclock: options.vclock }, callback);
 };
 
 RiakDOWN.prototype._batch = function (array, options, callback) {
@@ -79,6 +100,10 @@ RiakDOWN.prototype._batch = function (array, options, callback) {
 
 RiakDOWN.prototype._iterator = function (options) {
     return new RiakIterator(this, options);
+};
+
+RiakDOWN._siblingResolver = function (key, siblings, options, callback) {
+    callback(null, siblings[0].value);
 };
 
 module.exports = RiakDOWN;
