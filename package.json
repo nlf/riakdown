@@ -1,0 +1,36 @@
+{
+  "name": "riakdown",
+  "version": "0.0.1",
+  "description": "A LevelDOWN compatible riak adapter",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/nlf/riakdown.git"
+  },
+  "keywords": [
+    "level",
+    "leveldb",
+    "leveldown",
+    "levelup",
+    "riak"
+  ],
+  "author": "Nathan LaFreniere <quitlahok@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/nlf/riakdown/issues"
+  },
+  "homepage": "https://github.com/nlf/riakdown",
+  "devDependencies": {
+    "tape": "^2.12.3",
+    "rimraf": "^2.2.6",
+    "precommit-hook": "^0.4.1"
+  },
+  "dependencies": {
+    "abstract-leveldown": "^0.12.0",
+    "riakpbc": "^1.3.1",
+    "async": "^0.7.0"
+  }
+}
