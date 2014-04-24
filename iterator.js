@@ -58,7 +58,7 @@ function RiakIterator(db, options) {
             }
         }];
 
-    if (options.limit) {
+    if (options.limit > 0) {
         phases.push({ reduce: { language: 'javascript', name: 'Riak.reduceLimit', arg: options.limit + 1 } });
     }
 
