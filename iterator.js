@@ -124,7 +124,6 @@ RiakIterator.prototype._next = function (callback) {
 };
 
 RiakIterator.prototype._end = function (callback) {
-    this._results.end();
     callback();
 };
 
