@@ -36,13 +36,20 @@ RiakDOWN.prototype._close = function (callback) {
 
 RiakDOWN.prototype._put = function (key, value, options, callback) {
     var bucket = options.bucket || this._bucket;
+    var indexes = Array.isArray(options.indexes) && options.indexes.map(function (index) {
+        return {
+            key: /_bin$/.test(index.key) || /_int$/.test(index.key) ? index.key : index.key + '_bin',
+            value: index.value
+        };
+    });
     
     this._client.put({
         bucket: bucket,
         key: toKey(key),
         content: {
             value: value,
-            content_type: options.content_type || 'application/octet-stream'
+            content_type: options.content_type || 'application/octet-stream',
+            indexes: indexes || []
         },
         vclock: options.vclock
     }, callback);
