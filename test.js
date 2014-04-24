@@ -21,4 +21,6 @@ require('abstract-leveldown/abstract/chained-batch-test').all(RiakDOWN, test, te
 
 require('abstract-leveldown/abstract/close-test').close(RiakDOWN, test, testCommon);
 
+require('abstract-leveldown/abstract/iterator-test').all(RiakDOWN, test, testCommon);
+
 require('abstract-leveldown/abstract/ranges-test').all(RiakDOWN, test, testCommon);
