@@ -6,9 +6,17 @@ var AbstractIterator = require('abstract-leveldown').AbstractIterator;
 function RiakIterator(db, options) {
     AbstractIterator.call(this, db);
 
+    options = JSON.parse(JSON.stringify(options));
+
     this._reverse = !!options.reverse;
     this._keyAsBuffer = !!options.keyAsBuffer;
     this._valueAsBuffer = !!options.valueAsBuffer;
+
+    if (this._reverse) {
+        options._start = options.start;
+        options.start = options.end;
+        options.end = options._start;
+    }
 
     var filters = [];
     if (options.gt && options.lt) {
@@ -23,6 +31,12 @@ function RiakIterator(db, options) {
         filters.push(["less_than", options.lt]);
     } else if (options.lte) {
         filters.push(["less_than_eq", options.lte]);
+    } else if (options.start && options.end) {
+        filters.push(["between", options.start, options.end, true]);
+    } else if (options.start) {
+        filters.push(["greater_than_eq", options.start]);
+    } else if (options.end) {
+        filters.push(["less_than_eq", options.end]);
     }
 
     function mapValues(value, key) {
