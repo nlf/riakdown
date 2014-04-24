@@ -40,24 +40,23 @@ RiakDOWN currently resolves siblings in a very naive manner, by simply using whi
 var levelup = require('levelup');
 var riakdown = require('riakdown');
 riakdown._siblingResolver = function (key, siblings, options, callback) {
-  // key: the key that was requested when siblings were found
-  // siblings: an array of siblings, each of which have at least the following properties:
-  //   value: depending on your content_type this will be a string (text/*), an object (application/json), or a buffer (everything else)
-  //   content_type: the content_type
-  //   vtag: the riak-generated vtag for this sibling
-  //   last_mod: the timestamp of the last modification to this sibling
-  //   last_mod_usecs: microseconds associated with the last modification to the sibling
-  // options: the options object as passed to the original get request
-  // callback: the method to call once you've completed resolution, with the signature (err, resolved)
-  // where err is any error that may have occurred and will be passed on to the user, and resolved
-  // is the string, buffer, or object representing your resolved sibling. this data will be automatically
-  // saved to riak, resolving the siblings, and then returned to your original get callback.
-  //
   // the default resolver looks like this:
   callback(null, siblings[0].value);
 };
 var db = levelup('riak://localhost:8087/somebucket', { db: riakdown });
 ```
+
+The parameters passed in to the `_siblingResolver` method are
+
+- key: the key that contains siblings
+- siblings: an array of siblings, each of which will have at least the following properties:
+  - value: depending on content_type, this will be a string (text/*), an object (application/json) or a buffer
+  - content_type: the content_type stored in riak
+  - vtag: the riak-generated vtag for this sibling
+  - last_mod: the timestamp of the last modification to this sibling
+  - last_mod_usecs: the microseconds associated with the last modification
+- options: the options object passed through from the get request (with the bucket property set)
+- callback: the callback for when sibling resolution is complete, it has the signature `(err, resolved)`, where `resolved` is a string, buffer, or object representing the correct state of the sibling. this value will be persisted to the database and returned to the original `get` request's callback. if an error is passed to the callback, no resolution will be performed and the error will be passed through to the `get` request.
 
 Additionally, since riak supports buckets you may pass one in your options object to override the default bucket set when instantiating the client, as in:
 
