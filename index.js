@@ -16,7 +16,7 @@ function RiakDOWN(location) {
     AbstractLevelDOWN.call(this, location);
 
     var parsed = url.parse(location);
-    this._client = riakpbc.createClient({ host: parsed.hostname, port: parsed.port });
+    this._client = riakpbc.createClient({ host: parsed.hostname, port: parsed.port, parse_values: false });
     this._bucket = parsed.path.split('/')[1];
 }
 
