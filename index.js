@@ -80,7 +80,7 @@ RiakDOWN.prototype._get = function (key, options, callback) {
                 resolved = JSON.stringify(resolved);
             }
 
-            self._put(key, resolved, { bucket: bucket, vclock: reply.vclock }, function (err) {
+            self._put(key, resolved, util._extend(newoptions, { bucket: bucket, vclock: reply.vclock }), function (err) {
                 self._get(key, options, callback);
             });
         });
