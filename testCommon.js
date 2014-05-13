@@ -16,7 +16,7 @@ exports.cleanup = function (callback) {
         async.each(buckets.buckets, function (bucket, cb) {
             riak.getKeys({ bucket: bucket }, function (err, reply) {
                 async.each(reply.keys, function (key, icb) {
-                    riak.del({ bucket: 'leveldown_test', key: key }, icb);
+                    riak.del({ bucket: bucket, key: key }, icb);
                 }, cb);
             });
         }, callback);
