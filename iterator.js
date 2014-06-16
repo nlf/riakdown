@@ -1,24 +1,8 @@
 var util = require('util');
+var utils = require('./utils');
 var async = require('async');
 var Transform = require('stream').Transform;
 var AbstractIterator = require('abstract-leveldown').AbstractIterator;
-
-function mapValues(value, key) {
-    if (value.values[0].metadata['X-Riak-Deleted']) return [];
-    return [{ key: value.key, value: value.values[0].data }];
-}
-
-function sort(values, reverse) {
-    return values.sort(function (a, b) {
-        if (a.key < b.key) {
-            return reverse ? 1 : -1;
-        } else if (a.key > b.key) {
-            return reverse ? -1 : 1;
-        } else {
-            return 0;
-        }
-    });
-}
 
 function RiakIterator(db, options) {
     AbstractIterator.call(this, db);
@@ -30,75 +14,88 @@ function RiakIterator(db, options) {
     this._keyAsBuffer = !!options.keyAsBuffer;
     this._valueAsBuffer = !!options.valueAsBuffer;
 
+    var low, high;
+
+    if (options.hasOwnProperty('lt') && options.lt !== null && options.lt !== '') {
+        high = utils.decrement(options.lt);
+    } else if (options.hasOwnProperty('lte') && options.lte !== null && options.lte !== '') {
+        high = utils.roundDown(options.lte);
+    }
+
+    if (typeof high === 'undefined' || high === null || high === '') {
+        high = utils.roundDown(this._reverse ? options.start : options.end);
+    }
+
+    if (typeof high === 'undefined' || high === null || high === '') {
+        high = '~';
+    }
+
+    if (options.hasOwnProperty('gt') && options.gt !== null && options.gt !== '') {
+        low = utils.increment(options.gt);
+    } else if (options.hasOwnProperty('gte') && options.gte !== null && options.gte !== '') {
+        low = utils.roundUp(options.gte);
+    }
+
+    if (typeof low === 'undefined' || low === null || low === '') {
+        low = utils.roundUp(this._reverse ? options.end : options.start);
+    }
+
+    if (typeof low === 'undefined' || low === null || low === '') {
+        low = '!';
+    }
+
     if (this._reverse) {
-        options._start = options.start;
-        options.start = options.end;
-        options.end = options._start;
-    }
-
-    if (options.index && options.start) {
-        this._inputs = {
-            bucket: this._bucket,
-            index: /_int$/.test(options.index) || /_bin$/.test(options.index) ? options.index : options.index + '_bin',
-            start: '' + (options.gte || options.gt || options.start || '!'),
-            end: '' + (options.lte || options.lt || options.end || '~')
-        };
+        this._start = utils.reverseString(high);
+        this._end = utils.reverseString(low);
     } else {
-        var filters = [];
-        if (options.gt && options.lt) {
-            filters.push(["between", options.gt, options.lt, false]);
-        } else if (options.gte && options.lte) {
-            filters.push(["between", options.gte, options.lte, true]);
-        } else if (options.gt) {
-            filters.push(["greater_than", options.gt]);
-        } else if (options.gte) {
-            filters.push(["greater_than_eq", options.gte]);
-        } else if (options.lt) {
-            filters.push(["less_than", options.lt]);
-        } else if (options.lte) {
-            filters.push(["less_than_eq", options.lte]);
-        } else if (options.start && options.end) {
-            filters.push(["between", options.start, options.end, true]);
-        } else if (options.start) {
-            filters.push(["greater_than_eq", options.start]);
-        } else if (options.end) {
-            filters.push(["less_than_eq", options.end]);
-        }
-
-        if (filters.length) {
-            this._inputs = { bucket: this._bucket, key_filters: filters };
-        }
+        this._end = high;
+        this._start = low;
     }
 
-    this._inputs = this._inputs || this._bucket;
-
-    var phases = [{
-        map: {
-            language: 'javascript',
-            source: mapValues.toString()
-        }
-    }, {
-        reduce: {
-            language: 'javascript',
-            source: sort.toString(),
-            arg: this._reverse
-        }
-    }];
-
-    if (options.limit > 0) {
-        phases.push({ reduce: { language: 'javascript', name: 'Riak.reduceLimit', arg: options.limit + 1 } });
-    }
-
-    var request = {
-        inputs: this._inputs,
-        query: phases
+    var query = {
+        bucket: this._bucket,
+        index: this._reverse ? '_reverse_key_bin' : '$key',
+        qtype: 1,
+        range_min: this._start,
+        range_max: this._end,
+        pagination_sort: true
     };
 
-    this._results = db._client.mapred({ request: JSON.stringify(request), content_type: 'application/json' });
+    if (options.limit > 0) {
+        query.max_results = options.limit;
+    }
+
+    var keyTransform = new Transform({ objectMode: true });
+    keyTransform._transform = function (chunk, encoding, next) {
+        if (!chunk.keys) {
+            return next();
+        }
+
+        for (var i = 0, l = chunk.keys.length; i < l; i++) {
+            this.push(chunk.keys[i]);
+        }
+        next();
+    };
+
+    var self = this;
+
+    this._results = new Transform({ objectMode: true });
+    this._results._transform = function (chunk, encoding, next) {
+        db._client.get({ bucket: self._bucket, key: chunk }, function (err, res) {
+            if (err || !res.content) {
+                return next();
+            }
+
+            this.push({ key: chunk, value: res.content[0].value });
+            next();
+        }.bind(this));
+    };
 
     this._results.once('end', function () {
         this._endEmitted = true;
     }.bind(this));
+
+    db._client.getIndex(query).pipe(keyTransform).pipe(this._results);
 }
 
 util.inherits(RiakIterator, AbstractIterator);
@@ -124,15 +121,7 @@ RiakIterator.prototype._next = function (callback) {
         this._results.once('readable', onReadable);
         this._results.once('end', onEnd);
     } else {
-        if (this._keyAsBuffer) {
-            obj.key = new Buffer(obj.key);
-        }
-
-        if (!this._valueAsBuffer) {
-            obj.value = obj.value.toString();
-        }
-
-        callback(null, obj.key, obj.value);
+        callback(null, this._keyAsBuffer ? new Buffer(obj.key) : obj.key, this._valueAsBuffer ? obj.value : obj.value.toString());
     }
 };
 

@@ -1,4 +1,5 @@
 var util = require('util');
+var utils = require('./utils');
 var url = require('url');
 var AbstractLevelDOWN = require('abstract-leveldown').AbstractLevelDOWN;
 var RiakIterator = require('./iterator');
@@ -36,11 +37,16 @@ RiakDOWN.prototype._close = function (callback) {
 
 RiakDOWN.prototype._put = function (key, value, options, callback) {
     var bucket = options.bucket || this._bucket;
-    var indexes = Array.isArray(options.indexes) && options.indexes.map(function (index) {
+    var indexes = [].concat(options.indexes || []).map(function (index) {
         return {
-            key: /_bin$/.test(index.key) || /_int$/.test(index.key) ? index.key : index.key + '_bin',
+            key: /_(bin|int)$/.test(index.key) ? index.key : index.key + '_bin',
             value: index.value
         };
+    });
+
+    indexes.push({
+        key: '_reverse_key_bin',
+        value: utils.reverseString(toKey(key))
     });
     
     this._client.put({
@@ -49,7 +55,7 @@ RiakDOWN.prototype._put = function (key, value, options, callback) {
         content: {
             value: value,
             content_type: options.content_type || 'application/octet-stream',
-            indexes: indexes || []
+            indexes: indexes
         },
         vclock: options.vclock
     }, callback);
