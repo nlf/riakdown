@@ -14,6 +14,10 @@ exports.cleanup = function (callback) {
     riak.getBuckets(function (err, buckets) {
         if (!buckets.buckets) buckets.buckets = [];
         async.each(buckets.buckets, function (bucket, cb) {
+            if (!/^_db_test_/.test(bucket)) {
+                return cb();
+            }
+
             riak.getKeys({ bucket: bucket }, function (err, reply) {
                 async.each(reply.keys ? reply.keys : [], function (key, icb) {
                     riak.del({ bucket: bucket, key: key }, icb);
@@ -33,9 +37,12 @@ exports.setUp = function (t) {
 };
 
 exports.tearDown = function (t) {
-    riak.disconnect();
-    riak = require('riakpbc').createClient();
-    t.end();
+    exports.cleanup(function (err) {
+        t.notOk(err, 'cleanup returned an error');
+        riak.disconnect();
+        riak = require('riakpbc').createClient();
+        t.end();
+    });
 };
 
 exports.collectEntries = function (iterator, callback) {
