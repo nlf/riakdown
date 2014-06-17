@@ -23,6 +23,18 @@ function RiakDOWN(location) {
 
 util.inherits(RiakDOWN, AbstractLevelDOWN);
 
+RiakDOWN.destroy = function (location, callback) {
+    var parsed = url.parse(location);
+    var client = riakpbc.createClient({ host: parsed.hostname, port: parsed.port, parse_values: false });
+    var bucket = parsed.path.split('/')[1];
+
+    client.getKeys({ bucket: bucket }, function (err, res) {
+        async.each(res.keys ? res.keys : [], function (key, cb) {
+            client.del({ bucket: bucket, key: key }, cb);
+        }, callback);
+    });
+};
+
 RiakDOWN.prototype._open = function (options, callback) {
     this._client.connect(callback);
 };
