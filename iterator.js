@@ -45,9 +45,17 @@ function RiakIterator(db, options) {
     }
 
     if (this._reverse) {
+        while (low.length < high.length) {
+            low += '!';
+        }
+
         this._start = utils.reverseString(high);
         this._end = utils.reverseString(low);
     } else {
+        while (high.length < low.length) {
+            high += '~';
+        }
+
         this._end = high;
         this._start = low;
     }
