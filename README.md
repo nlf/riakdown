@@ -67,6 +67,22 @@ db.get('test', { bucket: 'someotherbucket' }, function (err, value) { console.lo
 
 You may also explicitly pass a vclock option for `put` and `del` operations, though it is recommended you allow RiakDOWN to manage this for you.
 
+## Secondary indexes
+
+When writing an object, you may pass manual secondary indexes to RiakDOWN as follows:
+
+```js
+riakdown.put('key', 'value', { indexes: [{ key: 'name_bin', value: 'test' }] }, callback);
+```
+
+When saving the secondary index, RiakDOWN will automatically create a second index for you with a prefix of `_reverse_` (i.e. from the example above, `_reverse_name_bin`) that contains an inverted copy of the value to facilitate reverse sorting in the iterator.
+
+This index can then be used by the iterator as an alternate source for sorting and searching of objects, by passing the key of the index to the iterator, for example:
+
+```js
+var iter = riakdown.iterator({ index: 'name_bin', reverse: true, limit: 5 });
+```
+
 ## Licence
 
 RiakDOWN is Copyright (c) 2014 Nathan LaFreniere [@quitlahok](https://twitter.com/quitlahok) and licensed under the MIT licence. All rights not explicitly granted in the MIT license are reserved. See the included LICENSE file for more details.
