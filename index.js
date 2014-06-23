@@ -56,6 +56,13 @@ RiakDOWN.prototype._put = function (key, value, options, callback) {
         };
     });
 
+    indexes.forEach(function (index) {
+        indexes.push({
+            key: '_reverse_' + index.key,
+            value: /_int$/.test(index.key) ? -1 * index.value : utils.reverseString(index.value)
+        });
+    });
+
     indexes.push({
         key: '_reverse_key_bin',
         value: utils.reverseString(toKey(key))

@@ -62,12 +62,17 @@ function RiakIterator(db, options) {
 
     var query = {
         bucket: this._bucket,
-        index: this._reverse ? '_reverse_key_bin' : '$key',
         qtype: 1,
         range_min: this._start,
         range_max: this._end,
         pagination_sort: true
     };
+
+    if (options.index) {
+        query.index = this._reverse ? '_reverse_' + options.index : options.index;
+    } else {
+        query.index = this._reverse ? '_reverse_key_bin' : '$key';
+    }
 
     if (options.limit > 0) {
         query.max_results = options.limit;
