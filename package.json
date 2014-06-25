@@ -4,7 +4,8 @@
   "description": "A LevelDOWN compatible riak adapter",
   "main": "index.js",
   "scripts": {
-    "test": "node test"
+    "test": "node test",
+    "test-pouchdb": "SERVER_ARGS='--level-backend ../../.. --level-prefix riak://localhost:8087/' ./test-pouchdb.sh"
   },
   "repository": {
     "type": "git",
@@ -24,13 +25,14 @@
   },
   "homepage": "https://github.com/nlf/riakdown",
   "devDependencies": {
-    "tape": "^2.12.3",
-    "rimraf": "^2.2.6",
-    "precommit-hook": "^1.0.0"
+    "pouchdb": "git://github.com/pouchdb/pouchdb#2415",
+    "pouchdb-server": "^0.4.0",
+    "precommit-hook": "^1.0.0",
+    "tape": "^2.12.3"
   },
   "dependencies": {
     "abstract-leveldown": "^0.12.0",
-    "riakpbc": "^1.4.1",
-    "async": "^0.7.0"
+    "async": "^0.7.0",
+    "riakpbc": "^1.4.1"
   }
 }
