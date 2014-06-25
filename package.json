@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "node test",
-    "test-pouchdb": "SERVER_ARGS='--level-backend ../../.. --level-prefix riak://localhost:8087/' ./test-pouchdb.sh"
+    "test-pouchdb-server": "SERVER_ARGS='--level-backend ../../.. --level-prefix riak://localhost:8087/' ./test-pouchdb.sh",
+    "test-pouchdb-client": "LEVEL_ADAPTER=../../.. LEVEL_PREFIX=riak://localhost:8087/ ./test-pouchdb.sh",
+    "test-pouchdb-both": "LEVEL_ADAPTER=../../.. LEVEL_PREFIX=riak://localhost:8087/ SERVER_ARGS='--level-backend ../../.. --level-prefix riak://localhost:8087/' ./test-pouchdb.sh"
   },
   "repository": {
     "type": "git",
