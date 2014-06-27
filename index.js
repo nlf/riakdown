@@ -51,7 +51,7 @@ RiakDOWN.prototype._put = function (key, value, options, callback) {
     var bucket = options.bucket || this._bucket;
 
     if (options.type === 'counter') {
-        this._client.put({
+        this._client.updateCounter({
             bucket: bucket,
             key: toKey(key),
             amount: value
