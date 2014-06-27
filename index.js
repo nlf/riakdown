@@ -99,7 +99,7 @@ RiakDOWN.prototype._get = function (key, options, callback) {
             bucket: bucket,
             key: toKey(key)
         }, function (err, reply) {
-            if (err || (!reply)) {
+            if (err || !reply || !reply.hasOwnProperty('value')) {
                 return callback(new Error('NotFound'));
             }
 
