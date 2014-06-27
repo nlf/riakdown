@@ -44,27 +44,9 @@ function RiakIterator(db, options) {
         low = '!';
     }
 
-    if (this._reverse) {
-        while (low.length < high.length) {
-            low += '!';
-        }
-
-        this._start = utils.reverseString(high);
-        this._end = utils.reverseString(low);
-    } else {
-        while (high.length < low.length) {
-            high += '~';
-        }
-
-        this._end = high;
-        this._start = low;
-    }
-
     var query = {
         bucket: this._bucket,
         qtype: 1,
-        range_min: this._start,
-        range_max: this._end,
         pagination_sort: true
     };
 
@@ -76,6 +58,28 @@ function RiakIterator(db, options) {
 
     if (options.limit > 0) {
         query.max_results = options.limit;
+    }
+
+    var keyIsString = (/_bin$/.test(query.index) || query.index === '$key') ? true : false;
+
+    if (this._reverse) {
+        if (keyIsString) {
+            while (low.length < high.length) {
+                low += '!';
+            }
+        }
+
+        query.range_min = keyIsString ? utils.reverseString(high) : -1 * high;
+        query.range_max = keyIsString ? utils.reverseString(low) : -1 * low;
+    } else {
+        if (keyIsString) {
+            while (high.length < low.length) {
+                high += '~';
+            }
+        }
+
+        query.range_max = high;
+        query.range_min = low;
     }
 
     var keyTransform = new Transform({ objectMode: true });
