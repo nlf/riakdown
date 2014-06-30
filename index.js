@@ -84,6 +84,7 @@ RiakDOWN.prototype._put = function (key, value, options, callback) {
                 content_type: options.content_type || 'application/octet-stream',
                 indexes: indexes
             },
+            return_head: true,
             vclock: options.vclock
         }, callback);
     }
@@ -112,7 +113,7 @@ RiakDOWN.prototype._get = function (key, options, callback) {
             }
 
             if (reply.content.length === 1) {
-                return callback(null, options.asBuffer === false ? reply.content[0].value.toString() : reply.content[0].value);
+                return callback(null, options.asBuffer === false ? reply.content[0].value.toString() : reply.content[0].value, { vclock: reply.vclock });
             }
 
             newoptions = JSON.parse(JSON.stringify(options)); // ugly clone so we don't modify the original options
