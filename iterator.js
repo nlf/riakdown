@@ -103,7 +103,7 @@ function RiakIterator(db, options) {
                 return next();
             }
 
-            this.push({ key: chunk, value: res.content[0].value });
+            this.push({ key: chunk, value: res.content[0].value, extra: { vclock: res.vclock } });
             next();
         }.bind(this));
     };
@@ -138,7 +138,7 @@ RiakIterator.prototype._next = function (callback) {
         this._results.once('readable', onReadable);
         this._results.once('end', onEnd);
     } else {
-        callback(null, this._keyAsBuffer ? new Buffer(obj.key) : obj.key, this._valueAsBuffer ? obj.value : obj.value.toString());
+        callback(null, this._keyAsBuffer ? new Buffer(obj.key) : obj.key, this._valueAsBuffer ? obj.value : obj.value.toString(), obj.extra);
     }
 };
 
