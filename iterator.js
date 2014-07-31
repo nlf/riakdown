@@ -58,6 +58,9 @@ function RiakIterator(db, options) {
 
     if (options.limit > 0) {
         query.max_results = options.limit;
+        if (options.continuation) {
+            query.continuation = options.continuation;
+        }
     }
 
     var keyIsString = (/_bin$/.test(query.index) || query.index === '$key') ? true : false;
@@ -102,8 +105,7 @@ function RiakIterator(db, options) {
             if (err || !res.content) {
                 return next();
             }
-
-            this.push({ key: chunk, value: res.content[0].value, extra: { vclock: res.vclock } });
+            this.push({ key: chunk, value: res.content[0].value, extra: { vclock: res.vclock, continuation: res.continuation } });
             next();
         }.bind(this));
     };
