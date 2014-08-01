@@ -1,6 +1,6 @@
 {
   "name": "riakdown",
-  "version": "1.2.5",
+  "version": "1.3.0",
   "description": "A LevelDOWN compatible riak adapter",
   "main": "index.js",
   "scripts": {
